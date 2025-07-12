@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: discord-bot
+    env: python
+    buildCommand: uv sync
+    startCommand: uv run python main.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11

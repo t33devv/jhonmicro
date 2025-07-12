@@ -1,0 +1,13 @@
+[project]
+name = "bot-v4"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "discord>=2.3.2",
+    "discord-py[voice]>=2.5.2",
+    "dotenv>=0.9.9",
+    "logging>=0.4.9.6",
+    "vacefron-py>=2.0.3",
+]
