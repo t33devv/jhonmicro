@@ -8,41 +8,6 @@ a discord.py bot for my itch.io game jam [Micro Jam](https://discord.com/servers
 git clone https://github.com/t33devv/jhonmicro.git
 ```
 
-## Quick Start the Bot
-1. Create a .env in the root directory
-```bash
-cd jhonmicro
-touch .env
-```
-
-2. Create a Discord bot from the [Discord Developer Portal](https://discord.com/developers/applications)
-  - Add the bot to any server you like (create a new one for testing purposes
-
-3. Within the .env file, write:
-```bash
-TOKEN = your_token_here
-GUILD_ID = your_discord_server_id_here
-*to get the guild_id you'll need discord developer mode which can be turned on in your profile settings*
-```
-
-4. If you don't have UV, run:
-```bash
-pip install uv
-uv version
-```
-
-5. Navigate to your project folder, and run:
-```bash
-uv run main.py
-```
-
-6. Now the bot should be live in the server you put as the GUILD_ID, have fun testing!
-
-## Documentation
-
-This bot was made with discord.py, so to help with development, please refer to the [Discord.py documentation](https://discordpy.readthedocs.io/en/stable/).
-They have tons of examples of code for existing features.
-
 ## How to help with Development/Contribution
 
 1. Fork the repository
@@ -78,9 +43,45 @@ git push origin feat/your-feature-name
 
 5. Open a Pull Request from Github
 
+## Quick Start the Bot (E.G. if you want to use this as a template for your own bot)
+1. Create a .env in the root directory
+```bash
+cd jhonmicro
+touch .env
+```
+
+2. Create a Discord bot from the [Discord Developer Portal](https://discord.com/developers/applications)
+  - Add the bot to any server you like (create a new one for testing purposes
+
+3. Within the .env file, write:
+```bash
+TOKEN = your_token_here
+GUILD_ID = your_discord_server_id_here
+*to get the guild_id you'll need discord developer mode which can be turned on in your profile settings*
+```
+
+4. If you don't have UV, run:
+```bash
+pip install uv
+uv version
+```
+
+5. Navigate to your project folder, and run:
+```bash
+uv run main.py
+```
+
+6. Now the bot should be live in the server you put as the GUILD_ID, have fun testing!
+
+## Documentation
+
+This bot was made with discord.py, so to help with development, please refer to the [Discord.py documentation](https://discordpy.readthedocs.io/en/stable/).
+They have tons of examples of code for existing features.
+
 ## Support
 
 If you have any questions about this, feel free to join our [Discord Server](https://discord.com/servers/micro-jam-1190868995226730616) and ping me (@t33dev) or any other staff!
 
 ## Made with ❤️ by Tommy and the Micro Jam community
+
 
