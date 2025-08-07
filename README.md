@@ -6,8 +6,6 @@ a discord.py bot for my itch.io game jam [Micro Jam](https://discord.com/servers
 
 ```bash
 git clone https://github.com/t33devv/jhonmicro.git
-
-*installs 10-100x faster than pip*
 ```
 
 ## Quick Start the Bot
@@ -85,3 +83,4 @@ git push origin feat/your-feature-name
 If you have any questions about this, feel free to join our [Discord Server](https://discord.com/servers/micro-jam-1190868995226730616) and ping me (@t33dev) or any other staff!
 
 ## Made with ❤️ by Tommy and the Micro Jam community
+
