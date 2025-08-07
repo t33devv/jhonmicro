@@ -10,11 +10,14 @@ import vacefron
 import sqlite3
 from vacefron import Rankcard
 
+# loads the bot token from .env (create your own bot if you want to help with development)
 load_dotenv()
 token = os.getenv('TOKEN')
 
+# loads the guild token from .env (create your own guild if you want to help with development)
 guildObj = discord.Object(id=os.getenv('GUILD_ID'))
 
+# connect to "database.sqlite"
 database = sqlite3.connect('database.sqlite')
 cursor = database.cursor()
 
@@ -24,6 +27,7 @@ class Client(commands.Bot):
     async def on_ready(self):
         print(f"ready when you are, {self.user.name}")
 
+        # sync the slash commands
         try:
             guild = discord.Object(id=os.getenv('GUILD_ID'))
             synced = await self.tree.sync(guild=guild)
@@ -31,6 +35,7 @@ class Client(commands.Bot):
         except Exception as e:
             print(f'Error syncing commands: {e}')
 
+    # ranking system
     async def on_message(self, message):
         levels_channel = self.get_channel(1255769461986951229)
         emoji = self.get_emoji(1380162985263366184)
@@ -60,6 +65,7 @@ class Client(commands.Bot):
                 cursor.execute(f"UPDATE levels SET last_lvl = {int(lvl)} WHERE user_id = {message.author.id} AND guild_id = {message.guild.id}")
                 database.commit()
 
+    # some stupid testing stuff
     async def on_reaction_add(self, reaction, user):
         await reaction.message.channel.send(f'{user.name} liked the message!')
 
@@ -69,6 +75,8 @@ intents.message_content = True
 intents.members = True
 
 client = Client(command_prefix='!', intents=intents)
+
+# below is all the slash commands
 
 @client.tree.command(name='themes', description='Suggest a theme for all following events!', guild=guildObj)
 async def themes(interaction: discord.Interaction):
@@ -101,6 +109,7 @@ async def rank(interaction: discord.Interaction):
     next_lvl_xp = int((int(level) + 1) / 0.1) ** 2
     next_lvl_xp = int(next_lvl_xp)
 
+    # use vacefron's RankCard to easily create the ranking graphic
     rank_card = Rankcard(
         username = interaction.user.display_name,
         avatar_url = interaction.user.avatar.url,
@@ -113,6 +122,8 @@ async def rank(interaction: discord.Interaction):
 
     card = await vacefron.Client().rankcard(rank_card)
     await interaction.response.send_message(card.url)
+
+# joining and leaving mechanics
 
 @client.event
 async def on_member_join(member):
@@ -147,5 +158,7 @@ async def on_member_remove(member):
     embed = discord.Embed(title=f'{emoji} {member.name} has left the server!')
 
     await leave_channel.send(embed=embed)
+
+# start the bot
     
 client.run(token, log_handler=handler, log_level=logging.DEBUG)
