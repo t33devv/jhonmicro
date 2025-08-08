@@ -165,9 +165,9 @@ async def leaderboard(interaction: discord.Interaction):
 
     print("Leaderboard: Generating new leaderboard and caching.")
     await interaction.response.defer()
-
-    descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC LIMIT 10'
-    cursor.execute(descending, (interaction.guild.id,))
+    
+    
+    cursor.execute('SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC LIMIT 10', (interaction.guild.id,))
     result = cursor.fetchall()
 
     if not result:
