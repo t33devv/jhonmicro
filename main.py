@@ -116,22 +116,26 @@ async def rules(interaction: discord.Interaction):
 
 @client.tree.command(name='rank', description='Check your rank!', guild=guildObj)
 async def rank(interaction: discord.Interaction):
+    cursor.execute(
+        "SELECT exp, level, last_lvl FROM levels WHERE user_id = ? AND guild_id = ?",
+        (interaction.user.id, interaction.guild.id,)
+    )
+    result = cursor.fetchone()
+
+    if result is None:
+        await interaction.response.send_message("You have no XP yet.")
+        return
+
     rank = 1
     descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC'
     cursor.execute(descending, (interaction.guild.id,))
-    result = cursor.fetchall()
+    all_results = cursor.fetchall()
 
-    for i in range(len(result)):
-        if result[i][0] == interaction.user.id:
+    for i in range(len(all_results)):
+        if all_results[i][0] == interaction.user.id:
             break
         else:
             rank += 1
-
-    cursor.execute(
-        "SELECT exp, level, last_lvl FROM levels WHERE user_id = ? AND guild_id = ?",
-        (interaction.user.id,interaction.guild.id,)
-    )
-    result = cursor.fetchone()
 
     level = result[1]
     exp = result[0]
@@ -141,13 +145,13 @@ async def rank(interaction: discord.Interaction):
     next_lvl_xp = int(next_lvl_xp)
 
     rank_card = Rankcard(
-        username = interaction.user.display_name,
-        avatar_url = interaction.user.avatar.url,
-        current_xp = exp,
-        next_level_xp = next_lvl_xp,
-        previous_level_xp = 0,
-        level = int(level),
-        rank = rank,
+        username=interaction.user.display_name,
+        avatar_url=interaction.user.avatar.url,
+        current_xp=exp,
+        next_level_xp=next_lvl_xp,
+        previous_level_xp=0,
+        level=int(level),
+        rank=rank,
     )
 
     card = await vacefron.Client().rankcard(rank_card)
