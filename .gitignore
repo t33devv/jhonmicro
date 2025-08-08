@@ -1,0 +1,16 @@
+# Ignore any database files
+*.sqlite
+*.sqlite-journal
+
+# Ignore virtual environments
+.venv
+venv
+
+# Ignore generated files if you want to install the bot through pip
+bot_v4.egg-info
+
+# Ignore env file (secrets stored within!)
+.env
+
+# Ignore logfiles
+*.log

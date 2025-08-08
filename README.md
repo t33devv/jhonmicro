@@ -44,34 +44,32 @@ git push origin feat/your-feature-name
 5. Open a Pull Request from Github
 
 ## Quick Start the Bot (E.G. if you want to use this as a template for your own bot)
-1. Create a .env in the root directory
-```bash
-cd jhonmicro
-touch .env
-```
+1. Create a Discord bot from the [Discord Developer Portal](https://discord.com/developers/applications)
+  - Add the bot to any server you like (create a new one for testing purposes)
+  - Make sure the bot has the server members intent and the message content intent
+  - Make sure the bot has slash commands and show messages permissions in the server
 
-2. Create a Discord bot from the [Discord Developer Portal](https://discord.com/developers/applications)
-  - Add the bot to any server you like (create a new one for testing purposes
-
-3. Within the .env file, write:
+2. Create a .env file:
+  - Create a file in the jhonmicro folder called .env
+  - Add these lines in the file, replacing the token and guild (server) ID with your bot token and server id respectively
 ```bash
 TOKEN = your_token_here
 GUILD_ID = your_discord_server_id_here
-*to get the guild_id you'll need discord developer mode which can be turned on in your profile settings*
 ```
+*to get the guild_id you'll need discord developer mode which can be turned on in your profile settings*
 
-4. If you don't have UV, run:
+3. If you don't have UV, run:
 ```bash
 pip install uv
 uv version
 ```
 
-5. Navigate to your project folder, and run:
+4. Navigate to your project folder, and run:
 ```bash
 uv run main.py
 ```
 
-6. Now the bot should be live in the server you put as the GUILD_ID, have fun testing!
+5. Now the bot should be live in the server you put as the GUILD_ID, have fun testing!
 
 ## Documentation
 
