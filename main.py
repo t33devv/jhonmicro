@@ -25,6 +25,10 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS levels(user_id INTEGER, guild_id IN
 
 class Client(commands.Bot):
     async def on_ready(self):
+        """
+            Prints the bot's username and syncs slash commands
+            (called automatically)
+        """
         print(f"ready when you are, {self.user.name}")
 
         # sync the slash commands
@@ -37,6 +41,14 @@ class Client(commands.Bot):
 
     # ranking system
     async def on_message(self, message):
+        """
+            Adds a random amount of XP to the user who sent the message
+            (called automatically)
+
+            Args:
+                message (discord.Message):
+                    The message that was sent to trigger this function
+        """
         levels_channel = self.get_channel(1255769461986951229)
         emoji = self.get_emoji(1380162985263366184)
 
@@ -79,6 +91,17 @@ class Client(commands.Bot):
 
     # some stupid testing stuff
     async def on_reaction_add(self, reaction, user):
+        """
+            Sends "(username) liked the message!" in the channel
+            the reaction happened in
+            (called automatically)
+
+            Args:
+                reaction (discord.Reaction):
+                    The reaction that was made to trigger this function
+                user (discord.User):
+                    The user that made the reaction
+        """
         await reaction.message.channel.send(f'{user.name} liked the message!')
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -92,14 +115,39 @@ client = Client(command_prefix='!', intents=intents)
 
 @client.tree.command(name='themes', description='Suggest a theme for all following events!', guild=guildObj)
 async def themes(interaction: discord.Interaction):
+    """
+        Send a link to the theme suggestion form
+        (called when a slash command is used)
+
+        Args:
+            interaction (discord.Interaction):
+                The interaction that triggered this slash command
+    """
     await interaction.response.send_message('Suggest a theme here: https://forms.gle/HeGESheR1Pb7fPeu9')
 
 @client.tree.command(name='prerequisites', description='Suggest a theme for all following events!', guild=guildObj)
 async def prerequisites(interaction: discord.Interaction):
+    """
+        Send a link to the prerequisite suggestion form
+        (called when a slash command is used)
+
+        Args:
+            interaction (discord.Interaction):
+                The interaction that triggered this slash command
+    """
     await interaction.response.send_message('Suggest a prerequisite here: https://forms.gle/eEyGmjeVzFXoed3c6')
 
 @client.tree.command(name='rank', description='Check your rank!', guild=guildObj)
 async def rank(interaction: discord.Interaction):
+    """
+        Send an image showing your level,
+        and your progress to the next level
+        (called when a slash command is used)
+
+        Args:
+            interaction (discord.Interaction):
+                The interaction that triggered this slash command
+    """
     rank = 1
     descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY exp DESC'
     cursor.execute(descending, (interaction.guild.id,))
@@ -142,6 +190,14 @@ async def rank(interaction: discord.Interaction):
 
 @client.event
 async def on_member_join(member):
+    """
+        Send a welcome message in the welcome channel
+        (called automatically)
+
+        Args:
+            member (discord.User):
+                The user that joined the server
+    """
     print(f'Welcome {member.mention} to the server!')
     welcome_channel = client.get_channel(1205736676706492447)
     emoji = member.guild.get_emoji(1286138480585474198)
@@ -166,6 +222,14 @@ async def on_member_join(member):
 
 @client.event
 async def on_member_remove(member):
+    """
+        Send a leave message in the leave channel
+        (called automatically)
+
+        Args:
+            member (discord.User):
+                The user that left the server
+    """
     print(f'{member.name} has left the server!')
     leave_channel = client.get_channel(1205736676706492447)
     emoji = member.guild.get_emoji(1272841563952906260)
