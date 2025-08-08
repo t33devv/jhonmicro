@@ -46,6 +46,8 @@ git push origin feat/your-feature-name
 ## Quick Start the Bot (E.G. if you want to use this as a template for your own bot)
 1. Create a Discord bot from the [Discord Developer Portal](https://discord.com/developers/applications)
   - Add the bot to any server you like (create a new one for testing purposes)
+  - Make sure the bot has the server members intent and the message content intent
+  - Make sure the bot has slash commands and show messages permissions in the server
 
 2. Create a .env file:
   - Create a file in the jhonmicro folder called .env
