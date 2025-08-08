@@ -51,7 +51,7 @@ touch .env
 ```
 
 2. Create a Discord bot from the [Discord Developer Portal](https://discord.com/developers/applications)
-  - Add the bot to any server you like (create a new one for testing purposes
+  - Add the bot to any server you like (create a new one for testing purposes)
 
 3. Within the .env file, write:
 ```bash
