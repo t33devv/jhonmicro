@@ -174,6 +174,6 @@ async def on_member_remove(member):
 
     await leave_channel.send(embed=embed)
 
-# start the bot
-    
-client.run(token, log_handler=handler, log_level=logging.DEBUG)
+if __name__ == "__main__":
+    # start the bot if run directly
+    client.run(token, log_handler=handler, log_level=logging.DEBUG)
