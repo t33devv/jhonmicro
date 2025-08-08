@@ -1,10 +1,4 @@
-Of course. Here is the complete code from the previous step with every single comment removed.
 
-code
-Python
-download
-content_copy
-expand_less
 
 import discord
 from discord.ext import commands
