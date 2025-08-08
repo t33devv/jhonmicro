@@ -49,9 +49,6 @@ class Client(commands.Bot):
                 message (discord.Message):
                     The message that was sent to trigger this function
         """
-        levels_channel = self.get_channel(1255769461986951229)
-        emoji = self.get_emoji(1380162985263366184)
-
         if message.author.bot:
             return
         
@@ -65,6 +62,7 @@ class Client(commands.Bot):
                 "INSERT INTO levels(user_id, guild_id, exp, level, last_lvl) VALUES (?, ?, 0, 0, 0)",
                 (message.author.id,message.guild.id,)
             )
+            database.commit()
         else:
             exp = result[2]
             level = result[3]
@@ -76,12 +74,14 @@ class Client(commands.Bot):
             lvl = 0.1 * math.sqrt(exp)
 
             cursor.execute(
-                "UPDATE levels SET exp = {exp}, level = ?, last_lvl = ? WHERE user_id = ? AND guild_id = ?",
-                (exp,lvl,last_lvl,message.author.id,message.guild.id,)
+                "UPDATE levels SET exp = ?, level = ? WHERE user_id = ? AND guild_id = ?",
+                (exp,lvl,message.author.id,message.guild.id,)
             )
             database.commit()
 
             if int(lvl) > last_lvl:
+                levels_channel = self.get_channel(1255769461986951229)
+                emoji = self.get_emoji(1380162985263366184)
                 await levels_channel.send(f'{message.author.mention} has reached level {int(lvl)}! {emoji}')
                 cursor.execute(
                     "UPDATE levels SET last_lvl = ? WHERE user_id = ? AND guild_id = ?",
@@ -125,7 +125,7 @@ async def themes(interaction: discord.Interaction):
     """
     await interaction.response.send_message('Suggest a theme here: https://forms.gle/HeGESheR1Pb7fPeu9')
 
-@client.tree.command(name='prerequisites', description='Suggest a theme for all following events!', guild=guildObj)
+@client.tree.command(name='prerequisites', description='Suggest a prerequisite for all following events!', guild=guildObj)
 async def prerequisites(interaction: discord.Interaction):
     """
         Send a link to the prerequisite suggestion form
@@ -136,6 +136,30 @@ async def prerequisites(interaction: discord.Interaction):
                 The interaction that triggered this slash command
     """
     await interaction.response.send_message('Suggest a prerequisite here: https://forms.gle/eEyGmjeVzFXoed3c6')
+
+@client.tree.command(name='rules', description='Read Jam rules!', guild=guildObj)
+async def rules(interaction: discord.Interaction):
+    """
+        Sends an embed with the jam rules.
+
+        Args:
+            interaction (discord.Interaction):
+                The interaction that triggered this slash command
+    """
+    embed = discord.Embed(
+        title="📜 Micro Jam Rules",
+        description="Please follow these rules to ensure a fun and fair jam for everyone!",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="1. Keep the game content clean", value="No explicit, NSFW or disturbing graphics.", inline=False)
+    embed.add_field(name="2. Keep the game in English", value="The title can be in any language, but the game itself must be in English.", inline=False)
+    embed.add_field(name="3. Don't start early", value="All work on your game must happen within the 48-hour jam period.", inline=False)
+    embed.add_field(name="4. Don't make changes after submission", value="Do not update or change your game after the 48-hour jam period has ended.", inline=False)
+    
+    if interaction.guild and interaction.guild.icon:
+        embed.set_footer(text=f"Rules for {interaction.guild.name}", icon_url=interaction.guild.icon.url)
+
+    await interaction.response.send_message(embed=embed)
 
 @client.tree.command(name='rank', description='Check your rank!', guild=guildObj)
 async def rank(interaction: discord.Interaction):
@@ -149,7 +173,7 @@ async def rank(interaction: discord.Interaction):
                 The interaction that triggered this slash command
     """
     rank = 1
-    descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY exp DESC'
+    descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC'
     cursor.execute(descending, (interaction.guild.id,))
     result = cursor.fetchall()
 
@@ -185,6 +209,50 @@ async def rank(interaction: discord.Interaction):
 
     card = await vacefron.Client().rankcard(rank_card)
     await interaction.response.send_message(card.url)
+
+@client.tree.command(name='leaderboard', description='Check the top 10 users in the server!', guild=guildObj)
+async def leaderboard(interaction: discord.Interaction):
+    """
+        Sends an embed with the top 10 users in the server
+        (called when a slash command is used)
+
+        Args:
+            interaction (discord.Interaction):
+                The interaction that triggered this slash command
+    """
+    
+    descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC LIMIT 10'
+    cursor.execute(descending, (interaction.guild.id,))
+    result = cursor.fetchall()
+
+    if not result:
+        await interaction.response.send_message("There are no users on the leaderboard yet!")
+        return
+    
+    embed = discord.Embed(title=f"🏆 Leaderboard for {interaction.guild.name}", color=discord.Color.gold())
+
+  
+    try:
+        top_user = await client.fetch_user(result[0][0])
+        embed.set_thumbnail(url=top_user.display_avatar.url)
+    except discord.NotFound:
+      
+        pass
+
+    leaderboard_string = []
+    medals = ["🥇", "🥈", "🥉"]
+    for i, row in enumerate(result):
+        try:
+            user = await client.fetch_user(row[0])
+            rank_prefix = f"{medals[i]} " if i < 3 else f"**{i+1}.** "
+            leaderboard_string.append(f"{rank_prefix}{user.mention} - Level: **{int(row[3])}** (XP: {row[2]})")
+        except discord.NotFound:
+            # This handles cases where the user might have left the server
+            leaderboard_string.append(f"**{i+1}.** Unknown User - Level: **{int(row[3])}** (XP: {row[2]})")
+
+    embed.description = "\n".join(leaderboard_string)
+    await interaction.response.send_message(embed=embed)
+
 
 # joining and leaving mechanics
 
@@ -239,5 +307,5 @@ async def on_member_remove(member):
     await leave_channel.send(embed=embed)
 
 if __name__ == "__main__":
-    # start the bot if run directly
+   
     client.run(token, log_handler=handler, log_level=logging.DEBUG)
