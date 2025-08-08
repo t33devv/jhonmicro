@@ -43,10 +43,16 @@ class Client(commands.Bot):
         if message.author.bot:
             return
         
-        cursor.execute(f"SELECT user_id, guild_id, exp, level, last_lvl FROM levels WHERE user_id = {message.author.id} AND guild_id = {message.guild.id}")
+        cursor.execute(
+            "SELECT user_id, guild_id, exp, level, last_lvl FROM levels WHERE user_id = ? AND guild_id = ?",
+            (message.author.id,message.guild.id,)
+        )
         result = cursor.fetchone()
         if result is None:
-            cursor.execute(f"INSERT INTO levels(user_id, guild_id, exp, level, last_lvl) VALUES ({message.author.id}, {message.guild.id}, 0, 0, 0)")
+            cursor.execute(
+                "INSERT INTO levels(user_id, guild_id, exp, level, last_lvl) VALUES (?, ?, 0, 0, 0)",
+                (message.author.id,message.guild.id,)
+            )
         else:
             exp = result[2]
             level = result[3]
@@ -57,12 +63,18 @@ class Client(commands.Bot):
 
             lvl = 0.1 * math.sqrt(exp)
 
-            cursor.execute(f"UPDATE levels SET exp = {exp}, level = {lvl}, last_lvl = {last_lvl} WHERE user_id = {message.author.id} AND guild_id = {message.guild.id}")
+            cursor.execute(
+                "UPDATE levels SET exp = {exp}, level = ?, last_lvl = ? WHERE user_id = ? AND guild_id = ?",
+                (exp,lvl,last_lvl,message.author.id,message.guild.id,)
+            )
             database.commit()
 
             if int(lvl) > last_lvl:
                 await levels_channel.send(f'{message.author.mention} has reached level {int(lvl)}! {emoji}')
-                cursor.execute(f"UPDATE levels SET last_lvl = {int(lvl)} WHERE user_id = {message.author.id} AND guild_id = {message.guild.id}")
+                cursor.execute(
+                    "UPDATE levels SET last_lvl = ? WHERE user_id = ? AND guild_id = ?",
+                    (int(lvl),message.author.id,message.guild.id,)
+                )
                 database.commit()
 
     # some stupid testing stuff
@@ -99,7 +111,10 @@ async def rank(interaction: discord.Interaction):
         else:
             rank += 1
 
-    cursor.execute(f"SELECT exp, level, last_lvl FROM levels WHERE user_id = {interaction.user.id} AND guild_id = {interaction.guild.id}")
+    cursor.execute(
+        "SELECT exp, level, last_lvl FROM levels WHERE user_id = ? AND guild_id = ?",
+        (interaction.user.id,interaction.guild.id,)
+    )
     result = cursor.fetchone()
 
     level = result[1]
