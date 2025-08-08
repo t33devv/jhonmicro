@@ -197,13 +197,13 @@ async def rank(interaction: discord.Interaction):
 # joining and leaving mechanics
 
 @client.event
-async def on_member_join(member):
+async def on_member_join(member:discord.Member):
     """
         Send a welcome message in the welcome channel
         (called automatically)
 
         Args:
-            member (discord.User):
+            member (discord.Member):
                 The user that joined the server
     """
     print(f'Welcome {member.mention} to the server!')
@@ -228,13 +228,13 @@ async def on_member_join(member):
     await member.send(embed=dmEmbed)
 
 @client.event
-async def on_member_remove(member):
+async def on_member_remove(member:discord.Member):
     """
         Send a leave message in the leave channel
         (called automatically)
 
         Args:
-            member (discord.User):
+            member (discord.Member):
                 The user that left the server
     """
     print(f'{member.name} has left the server!')
