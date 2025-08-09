@@ -9,6 +9,7 @@ import random
 import vacefron
 import sqlite3
 from vacefron import Rankcard
+import time
 
 # loads the bot token from .env (create your own bot if you want to help with development)
 load_dotenv()
@@ -21,9 +22,15 @@ guildObj = discord.Object(id=os.getenv('GUILD_ID'))
 database = sqlite3.connect('database.sqlite')
 cursor = database.cursor()
 
+# create table if it doesn't exist
 cursor.execute("""CREATE TABLE IF NOT EXISTS levels(user_id INTEGER, guild_id INTEGER, exp INTEGER, level INTEGER, last_lvl INTEGER)""")
 
 class Client(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.leaderboard_cache = None
+        self.leaderboard_cache_time = 0
+
     async def on_ready(self):
         """
             Prints the bot's username and syncs slash commands
@@ -49,9 +56,6 @@ class Client(commands.Bot):
                 message (discord.Message):
                     The message that was sent to trigger this function
         """
-        levels_channel = self.get_channel(1255769461986951229)
-        emoji = self.get_emoji(1380162985263366184)
-
         if message.author.bot:
             return
         
@@ -65,6 +69,7 @@ class Client(commands.Bot):
                 "INSERT INTO levels(user_id, guild_id, exp, level, last_lvl) VALUES (?, ?, 0, 0, 0)",
                 (message.author.id,message.guild.id,)
             )
+            database.commit()
         else:
             exp = result[2]
             level = result[3]
@@ -76,12 +81,18 @@ class Client(commands.Bot):
             lvl = 0.1 * math.sqrt(exp)
 
             cursor.execute(
+              feat/leaderboard_&_rules
+                "UPDATE levels SET exp = ?, level = ? WHERE user_id = ? AND guild_id = ?",
+                (exp,lvl,message.author.id,message.guild.id,)
                 "UPDATE levels SET exp = ?, level = ?, last_lvl = ? WHERE user_id = ? AND guild_id = ?",
                 (exp,lvl,last_lvl,message.author.id,message.guild.id,)
+              main
             )
             database.commit()
 
             if int(lvl) > last_lvl:
+                levels_channel = self.get_channel(1255769461986951229)
+                emoji = self.get_emoji(1380162985263366184)
                 await levels_channel.send(f'{message.author.mention} has reached level {int(lvl)}! {emoji}')
                 cursor.execute(
                     "UPDATE levels SET last_lvl = ? WHERE user_id = ? AND guild_id = ?",
@@ -125,7 +136,7 @@ async def themes(interaction: discord.Interaction):
     """
     await interaction.response.send_message('Suggest a theme here: https://forms.gle/HeGESheR1Pb7fPeu9')
 
-@client.tree.command(name='prerequisites', description='Suggest a theme for all following events!', guild=guildObj)
+@client.tree.command(name='prerequisites', description='Suggest a prerequisite for all following events!', guild=guildObj)
 async def prerequisites(interaction: discord.Interaction):
     """
         Send a link to the prerequisite suggestion form
@@ -136,6 +147,31 @@ async def prerequisites(interaction: discord.Interaction):
                 The interaction that triggered this slash command
     """
     await interaction.response.send_message('Suggest a prerequisite here: https://forms.gle/eEyGmjeVzFXoed3c6')
+
+@client.tree.command(name='rules', description='Read Jam rules!', guild=guildObj)
+async def rules(interaction: discord.Interaction):
+    """
+        Send an embedded message with the server's jam rules
+        (called when a slash command is used)
+
+        Args:
+            interaction (discord.Interaction):
+                The interaction that triggered this slash command
+    """
+    embed = discord.Embed(
+        title="📜 Micro Jam Rules",
+        description="Please follow these rules to ensure a fun and fair jam for everyone!",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="1. Keep the game content clean", value="No explicit, NSFW or disturbing graphics.", inline=False)
+    embed.add_field(name="2. Keep the game in English", value="The title can be in any language, but the game itself must be in English.", inline=False)
+    embed.add_field(name="3. Don't start early", value="All work on your game must happen within the 48-hour jam period.", inline=False)
+    embed.add_field(name="4. Don't make changes after submission", value="Do not update or change your game after the 48-hour jam period has ended.", inline=False)
+    
+    if interaction.guild and interaction.guild.icon:
+        embed.set_footer(text=f"Rules for {interaction.guild.name}", icon_url=interaction.guild.icon.url)
+
+    await interaction.response.send_message(embed=embed)
 
 @client.tree.command(name='rank', description='Check your rank!', guild=guildObj)
 async def rank(interaction: discord.Interaction):
@@ -148,22 +184,26 @@ async def rank(interaction: discord.Interaction):
             interaction (discord.Interaction):
                 The interaction that triggered this slash command
     """
-    rank = 1
-    descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY exp DESC'
-    cursor.execute(descending, (interaction.guild.id,))
-    result = cursor.fetchall()
+    cursor.execute(
+        "SELECT exp, level, last_lvl FROM levels WHERE user_id = ? AND guild_id = ?",
+        (interaction.user.id, interaction.guild.id,)
+    )
+    result = cursor.fetchone()
 
-    for i in range(len(result)):
-        if result[i][0] == interaction.user.id:
+    if result is None:
+        await interaction.response.send_message("You have no XP yet.")
+        return
+
+    rank = 1
+    descending = 'SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC'
+    cursor.execute(descending, (interaction.guild.id,))
+    all_results = cursor.fetchall()
+
+    for i in range(len(all_results)):
+        if all_results[i][0] == interaction.user.id:
             break
         else:
             rank += 1
-
-    cursor.execute(
-        "SELECT exp, level, last_lvl FROM levels WHERE user_id = ? AND guild_id = ?",
-        (interaction.user.id,interaction.guild.id,)
-    )
-    result = cursor.fetchone()
 
     level = result[1]
     exp = result[0]
@@ -174,17 +214,67 @@ async def rank(interaction: discord.Interaction):
 
     # use vacefron's RankCard to easily create the ranking graphic
     rank_card = Rankcard(
-        username = interaction.user.display_name,
-        avatar_url = interaction.user.avatar.url,
-        current_xp = exp,
-        next_level_xp = next_lvl_xp,
-        previous_level_xp = 0,
-        level = int(level),
-        rank = rank,
+        username=interaction.user.display_name,
+        avatar_url=interaction.user.avatar.url,
+        current_xp=exp,
+        next_level_xp=next_lvl_xp,
+        previous_level_xp=0,
+        level=int(level),
+        rank=rank,
     )
 
     card = await vacefron.Client().rankcard(rank_card)
     await interaction.response.send_message(card.url)
+
+@client.tree.command(name='leaderboard', description='Check the top 10 users in the server!', guild=guildObj)
+async def leaderboard(interaction: discord.Interaction):
+    """
+        Display the top 10 ranked users in the server
+        with caching to reduce database hits
+    """
+    CACHE_DURATION = 300
+    current_time = time.time()
+
+    if client.leaderboard_cache and (current_time - client.leaderboard_cache_time < CACHE_DURATION):
+        print("Leaderboard: Serving from cache.")
+        await interaction.response.send_message(embed=client.leaderboard_cache)
+        return
+
+    print("Leaderboard: Generating new leaderboard and caching.")
+    await interaction.response.defer()
+    
+    cursor.execute('SELECT * FROM levels WHERE guild_id = ? ORDER BY level DESC, exp DESC LIMIT 10', (interaction.guild.id,))
+    result = cursor.fetchall()
+
+    if not result:
+        await interaction.followup.send("There are no users on the leaderboard yet!")
+        return
+    
+    embed = discord.Embed(title=f"🏆 Leaderboard for {interaction.guild.name}", color=discord.Color.gold())
+
+    try:
+        top_user = await client.fetch_user(result[0][0])
+        embed.set_thumbnail(url=top_user.display_avatar.url)
+    except discord.NotFound:
+        pass
+
+    leaderboard_string = []
+    medals = ["🥇", "🥈", "🥉"]
+    for i, row in enumerate(result):
+        try:
+            user = await client.fetch_user(row[0])
+            rank_prefix = f"{medals[i]} " if i < 3 else f"**{i+1}.** "
+            leaderboard_string.append(f"{rank_prefix}{user.mention} - Level: **{int(row[3])}** (XP: {row[2]})")
+        except discord.NotFound:
+            leaderboard_string.append(f"**{i+1}.** Unknown User - Level: **{int(row[3])}** (XP: {row[2]})")
+
+    embed.description = "\n".join(leaderboard_string)
+    embed.set_footer(text=f"Last updated: {time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+
+    client.leaderboard_cache = embed
+    client.leaderboard_cache_time = time.time()
+
+    await interaction.followup.send(embed=embed)
 
 # joining and leaving mechanics
 
