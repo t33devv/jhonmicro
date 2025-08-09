@@ -76,7 +76,7 @@ class Client(commands.Bot):
             lvl = 0.1 * math.sqrt(exp)
 
             cursor.execute(
-                "UPDATE levels SET exp = {exp}, level = ?, last_lvl = ? WHERE user_id = ? AND guild_id = ?",
+                "UPDATE levels SET exp = ?, level = ?, last_lvl = ? WHERE user_id = ? AND guild_id = ?",
                 (exp,lvl,last_lvl,message.author.id,message.guild.id,)
             )
             database.commit()
