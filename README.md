@@ -51,10 +51,13 @@ git push origin feat/your-feature-name
 
 2. Create a .env file:
   - Create a file in the jhonmicro folder called .env
-  - Add these lines in the file, replacing the token and guild (server) ID with your bot token and server id respectively
+  - Add these lines in the file, replacing the values as needed for your bot and server
 ```bash
 TOKEN = your_token_here
 GUILD_ID = your_discord_server_id_here
+WELCOME_CHANNEL_ID = your_welcome_channel_id_here
+LEAVE_CHANNEL_ID = your_leave_channel_id_here
+LEVEL_CHANNEL_ID = your_level_channel_id_here
 ```
 *to get the guild_id you'll need discord developer mode which can be turned on in your profile settings*
 
