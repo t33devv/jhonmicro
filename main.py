@@ -81,8 +81,12 @@ class Client(commands.Bot):
             lvl = 0.1 * math.sqrt(exp)
 
             cursor.execute(
+              feat/leaderboard_&_rules
                 "UPDATE levels SET exp = ?, level = ? WHERE user_id = ? AND guild_id = ?",
                 (exp,lvl,message.author.id,message.guild.id,)
+                "UPDATE levels SET exp = ?, level = ?, last_lvl = ? WHERE user_id = ? AND guild_id = ?",
+                (exp,lvl,last_lvl,message.author.id,message.guild.id,)
+              main
             )
             database.commit()
 
