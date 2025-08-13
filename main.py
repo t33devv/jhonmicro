@@ -26,6 +26,10 @@ cursor = database.cursor()
 cursor.execute("""CREATE TABLE IF NOT EXISTS levels(user_id INTEGER, guild_id INTEGER, exp INTEGER, level INTEGER, last_lvl INTEGER)""")
 
 class Client(commands.Bot):
+    welcome_channel:discord.TextChannel = None
+    leave_channel:discord.TextChannel = None
+    levels_channel:discord.TextChannel = None
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.leaderboard_cache = None
@@ -37,6 +41,11 @@ class Client(commands.Bot):
             (called automatically)
         """
         print(f"ready when you are, {self.user.name}")
+
+        print("Fetching channels")
+        self.welcome_channel = await client.fetch_channel(os.getenv("WELCOME_CHANNEL_ID"))
+        self.leave_channel = await client.fetch_channel(os.getenv("LEAVE_CHANNEL_ID"))
+        self.levels_channel = await client.fetch_channel(os.getenv("LEVEL_CHANNEL_ID"))
 
         # sync the slash commands
         try:
@@ -56,6 +65,9 @@ class Client(commands.Bot):
                 message (discord.Message):
                     The message that was sent to trigger this function
         """
+
+        emoji = self.get_emoji(1380162985263366184)
+
         if message.author.bot:
             return
         
@@ -87,9 +99,8 @@ class Client(commands.Bot):
             database.commit()
 
             if int(lvl) > last_lvl:
-                levels_channel = self.get_channel(1255769461986951229)
-                emoji = self.get_emoji(1380162985263366184)
-                await levels_channel.send(f'{message.author.mention} has reached level {int(lvl)}! {emoji}')
+                await self.levels_channel.send(f'{message.author.mention} has reached level {int(lvl)}! {emoji}')
+
                 cursor.execute(
                     "UPDATE levels SET last_lvl = ? WHERE user_id = ? AND guild_id = ?",
                     (int(lvl),message.author.id,message.guild.id,)
@@ -275,17 +286,16 @@ async def leaderboard(interaction: discord.Interaction):
 # joining and leaving mechanics
 
 @client.event
-async def on_member_join(member):
+async def on_member_join(member:discord.Member):
     """
         Send a welcome message in the welcome channel
         (called automatically)
 
         Args:
-            member (discord.User):
+            member (discord.Member):
                 The user that joined the server
     """
     print(f'Welcome {member.mention} to the server!')
-    welcome_channel = client.get_channel(1205736676706492447)
     emoji = member.guild.get_emoji(1286138480585474198)
     emoji2 = member.guild.get_emoji(1392388150315450469)
     emoji3 = member.guild.get_emoji(1286139570328436866)
@@ -302,27 +312,26 @@ async def on_member_join(member):
     embed.set_footer(text=f"You're the {member.guild.member_count:,}th member in the server!")
     embed.set_thumbnail(url=member.display_avatar.url)
 
-    await welcome_channel.send(embed=embed)
+    await client.welcome_channel.send(embed=embed)
     dmEmbed = discord.Embed(title = f"{emoji3} Welcome to the Micro Jam Discord, a friendly community that will *hopefully* excel your progress as a Developer :D")
     await member.send(embed=dmEmbed)
 
 @client.event
-async def on_member_remove(member):
+async def on_member_remove(member:discord.Member):
     """
         Send a leave message in the leave channel
         (called automatically)
 
         Args:
-            member (discord.User):
+            member (discord.Member):
                 The user that left the server
     """
     print(f'{member.name} has left the server!')
-    leave_channel = client.get_channel(1205736676706492447)
     emoji = member.guild.get_emoji(1272841563952906260)
 
     embed = discord.Embed(title=f'{emoji} {member.name} has left the server!')
 
-    await leave_channel.send(embed=embed)
+    await client.leave_channel.send(embed=embed)
 
 if __name__ == "__main__":
     # start the bot if run directly
