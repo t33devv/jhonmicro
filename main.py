@@ -120,7 +120,7 @@ class Client(commands.Bot):
                 user (discord.User):
                     The user that made the reaction
         """
-        await reaction.message.channel.send(f'{user.name} liked the message!')
+        """ await reaction.message.channel.send(f'{user.name} liked the message!') """
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
