@@ -1,7 +1,7 @@
-[project]
-name = "bot-v4"
+[jhonmicro]
+name = "Jhon Micro"
 version = "0.1.0"
-description = "Add your description here"
+description = "official discord bot for Micro Jam"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
