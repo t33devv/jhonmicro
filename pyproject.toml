@@ -1,9 +1,9 @@
-[jhonmicro]
-name = "Jhon Micro"
+[tool.jhonmicro]
+name = "jhonmicro"
 version = "0.1.0"
 description = "official discord bot for Micro Jam"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.8"
 dependencies = [
     "discord>=2.3.2",
     "discord-py[voice]>=2.5.2",
