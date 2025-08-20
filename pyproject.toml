@@ -1,10 +1,11 @@
-[tool.jhonmicro]
+[project]
 name = "jhonmicro"
 version = "0.1.0"
 description = "Official Discord bot for Micro Jam"
 readme = "README.md"
 requires-python = ">=3.8"
 
+[project.dependencies]
 # Dependencies should be specified directly under the tool section
 dependencies = [
     "discord>=2.3.2",
