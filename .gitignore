@@ -13,4 +13,4 @@ bot_v4.egg-info
 .env
 
 # Ignore logfiles
-*.log
+*.log.DS_Store
