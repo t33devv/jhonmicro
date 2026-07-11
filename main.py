@@ -9,6 +9,8 @@ import random
 import sqlite3
 import time
 
+
+
 # loads the bot token from .env (create your own bot if you want to help with development)
 load_dotenv()
 token = os.getenv('TOKEN')
@@ -90,33 +92,132 @@ class Client(commands.Bot):
 
 
     # ranking system
-async def on_message(self, message):
+    async def on_message(self, message):
 
-    emoji = self.get_emoji(1380162985263366184)
+        print(f"Message received from {message.author}: {message.content}")
 
-    if message.author.bot:
-        return
+        emoji = self.get_emoji(1380162985263366184)
 
-    # Remove spaces and keep only letters/numbers
-    clean = "".join(c for c in message.content if c.isalnum())
+        if message.author.bot:
+            return
+        
+        if message.channel.id == SCAM_KICK_CHANNEL_ID:
 
-    char_count = len(clean)
+            if message.author.guild_permissions.manage_messages:
+                return
 
-    cursor.execute(
-        """
-        SELECT exp, level, last_lvl, messages, characters
-        FROM levels
-        WHERE user_id = ? AND guild_id = ?
-        """,
-        (message.author.id, message.guild.id)
-    )
+            cursor.execute(
+                """
+                INSERT INTO scamkick_stats (guild_id, kicks)
+                VALUES (?, 1)
+                ON CONFLICT(guild_id)
+                DO UPDATE SET kicks = kicks + 1
+                """,
+                (message.guild.id,)
+            )
+            database.commit()
 
-    result = cursor.fetchone()
+            cursor.execute(
+                "SELECT kicks FROM scamkick_stats WHERE guild_id = ?",
+                (message.guild.id,)
+            )
+            kick_count = cursor.fetchone()[0]
 
-    if result is None:
+            await message.guild.ban(
+                message.author,
+                reason="Triggered Scam-Kick.",
+                delete_message_seconds=3600
+            )
 
-        messages = 1
-        characters = char_count
+            await message.guild.unban(
+                message.author,
+                reason="Scam-Kick temporary ban."
+            )
+
+            embed = discord.Embed(
+                description=(
+                    "# 🛡️ Scam-Kick Triggered\n"
+                    f"**User:** {message.author.mention}\n"
+                    f"**ID:** `{message.author.id}`\n"
+                    f"**Channel:** {message.channel.mention}\n\n"
+                    "🧹 Deleted messages from the last **1 hour**.\n"
+                    f"📊 **Total Scammers Caught:** **{kick_count:,}**"
+                ),
+                color=discord.Color.red()
+            )
+
+            embed.set_thumbnail(url=message.author.display_avatar.url)
+
+            if getattr(client, "log_channel", None):
+                await client.log_channel.send(embed=embed)
+
+            return
+
+        # Remove spaces and keep only letters/numbers
+        clean = "".join(c for c in message.content if c.isalnum())
+
+        char_count = len(clean)
+
+        cursor.execute(
+            """
+            SELECT exp, level, last_lvl, messages, characters
+            FROM levels
+            WHERE user_id = ? AND guild_id = ?
+            """,
+            (message.author.id, message.guild.id)
+        )
+
+        result = cursor.fetchone()
+
+        if result is None:
+
+            messages = 1
+            characters = char_count
+
+            exp = int(
+                messages * 15
+                + math.sqrt(characters) * 6
+                + math.log2(messages + 1) * 75
+            )
+
+            level = 0.1 * math.sqrt(exp)
+
+            cursor.execute(
+                """
+                INSERT INTO levels
+                (
+                    user_id,
+                    guild_id,
+                    exp,
+                    level,
+                    last_lvl,
+                    coins,
+                    last_daily,
+                    messages,
+                    characters
+                )
+                VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)
+                """,
+                (
+                    message.author.id,
+                    message.guild.id,
+                    exp,
+                    level,
+                    messages,
+                    characters
+                )
+            )
+
+            database.commit()
+            return
+
+        exp, level, last_lvl, messages, characters = result
+
+        messages += 1
+        characters += char_count
+
+        print(f"Messages: {messages}")
+        print(f"Characters: {characters}")
 
         exp = int(
             messages * 15
@@ -124,92 +225,59 @@ async def on_message(self, message):
             + math.log2(messages + 1) * 75
         )
 
+        print(f"New EXP: {exp}")
+
         level = 0.1 * math.sqrt(exp)
 
         cursor.execute(
             """
-            INSERT INTO levels
-            (
-                user_id,
-                guild_id,
-                exp,
-                level,
-                last_lvl,
-                coins,
-                last_daily,
-                messages,
-                characters
-            )
-            VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)
-            """,
-            (
-                message.author.id,
-                message.guild.id,
-                exp,
-                level,
-                messages,
-                characters
-            )
-        )
-
-        database.commit()
-        return
-
-    exp, level, last_lvl, messages, characters = result
-
-    messages += 1
-    characters += char_count
-
-    exp = int(
-        messages * 15
-        + math.sqrt(characters) * 6
-        + math.log2(messages + 1) * 75
-    )
-
-    level = 0.1 * math.sqrt(exp)
-
-    cursor.execute(
-        """
-        UPDATE levels
-        SET
-            exp = ?,
-            level = ?,
-            messages = ?,
-            characters = ?
-        WHERE user_id = ? AND guild_id = ?
-        """,
-        (
-            exp,
-            level,
-            messages,
-            characters,
-            message.author.id,
-            message.guild.id
-        )
-    )
-
-    database.commit()
-
-    if int(level) > last_lvl:
-
-        await self.levels_channel.send(
-            f"{message.author.mention} has reached level {int(level)}! {emoji}"
-        )
-
-        cursor.execute(
-            """
             UPDATE levels
-            SET last_lvl = ?
+            SET
+                exp = ?,
+                level = ?,
+                messages = ?,
+                characters = ?
             WHERE user_id = ? AND guild_id = ?
             """,
             (
-                int(level),
+                exp,
+                level,
+                messages,
+                characters,
                 message.author.id,
                 message.guild.id
             )
         )
 
         database.commit()
+
+        cursor.execute(
+            "SELECT exp, messages, characters FROM levels WHERE user_id=? AND guild_id=?",
+            (message.author.id, message.guild.id)
+        )
+
+        print("Database now contains:", cursor.fetchone())
+
+        if int(level) > last_lvl:
+
+            await self.levels_channel.send(
+                f"{message.author.mention} has reached level {int(level)}! {emoji}"
+            )
+
+            cursor.execute(
+                """
+                UPDATE levels
+                SET last_lvl = ?
+                WHERE user_id = ? AND guild_id = ?
+                """,
+                (
+                    int(level),
+                    message.author.id,
+                    message.guild.id
+                )
+            )
+
+            database.commit()
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
@@ -912,34 +980,56 @@ async def rebuildxp(interaction: discord.Interaction):
         characters = data["characters"]
 
         exp = int(
-            messages * 15
-            + math.sqrt(characters) * 6
-            + math.log2(messages + 1) * 75
+            messages * 20
+            + characters * 0.5
         )
 
         level = 0.1 * math.sqrt(exp)
 
         cursor.execute(
-            """
-            UPDATE levels
-            SET
-                exp=?,
-                level=?,
-                last_lvl=?,
-                messages=?,
-                characters=?
-            WHERE user_id=? AND guild_id=?
-            """,
-            (
-                exp,
-                level,
-                int(level),
-                messages,
-                characters,
-                user_id,
-                interaction.guild.id
-            )
+            "SELECT 1 FROM levels WHERE user_id=? AND guild_id=?",
+            (user_id, interaction.guild.id)
         )
+
+        if cursor.fetchone() is None:
+            cursor.execute(
+                """
+                INSERT INTO levels
+                (user_id, guild_id, exp, level, last_lvl, coins, last_daily, messages, characters)
+                VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)
+                """,
+                (
+                    user_id,
+                    interaction.guild.id,
+                    exp,
+                    level,
+                    int(level),
+                    messages,
+                    characters
+                )
+            )
+        else:
+            cursor.execute(
+                """
+                UPDATE levels
+                SET
+                    exp=?,
+                    level=?,
+                    last_lvl=?,
+                    messages=?,
+                    characters=?
+                WHERE user_id=? AND guild_id=?
+                """,
+                (
+                    exp,
+                    level,
+                    int(level),
+                    messages,
+                    characters,
+                    user_id,
+                    interaction.guild.id
+                )
+            )
 
     database.commit()
 
@@ -958,66 +1048,6 @@ CREATE TABLE IF NOT EXISTS scamkick_stats(
 )
 """)
 database.commit()
-
-@client.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    if message.channel.id == SCAM_KICK_CHANNEL_ID:
-
-        if message.author.guild_permissions.manage_messages:
-            return
-
-        cursor.execute(
-            """
-            INSERT INTO scamkick_stats (guild_id, kicks)
-            VALUES (?, 1)
-            ON CONFLICT(guild_id)
-            DO UPDATE SET kicks = kicks + 1
-            """,
-            (message.guild.id,)
-        )
-        database.commit()
-
-        cursor.execute(
-            "SELECT kicks FROM scamkick_stats WHERE guild_id = ?",
-            (message.guild.id,)
-        )
-        kick_count = cursor.fetchone()[0]
-
-        await message.guild.ban(
-            message.author,
-            reason="Triggered Scam-Kick.",
-            delete_message_seconds=3600
-        )
-
-        await message.guild.unban(
-            message.author,
-            reason="Scam-Kick temporary ban."
-        )
-
-        embed = discord.Embed(
-            description=(
-                "# 🛡️ Scam-Kick Triggered\n"
-                f"**User:** {message.author.mention}\n"
-                f"**ID:** `{message.author.id}`\n"
-                f"**Channel:** {message.channel.mention}\n\n"
-                "🧹 Deleted messages from the last **1 hour**.\n"
-                f"📊 **Total Scammers Caught:** **{kick_count:,}**"
-            ),
-            color=discord.Color.red()
-        )
-
-        embed.set_thumbnail(url=message.author.display_avatar.url)
-
-        if getattr(client, "log_channel", None):
-            await client.log_channel.send(embed=embed)
-
-        return
-
-    await Client.on_message(client, message)
-
 
 @client.tree.command(
     name="setup_scamkick",
